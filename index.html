@@ -43,9 +43,11 @@
 
   .wrap.wardrobe-section{
     max-width: 100%;
+    width: 100%;
     min-height: 0;
     padding-left: 32px;
     padding-right: 32px;
+    box-sizing: border-box;
   }
 
   .eyebrow{
@@ -397,8 +399,22 @@
   }
   .wardrobe-grid{
     display:grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap:14px;
+  }
+  .wardrobe-thumb{
+    width:100%;
+    height:160px;
+    flex-shrink:0;
+    background:#EFE8D9;
+    border-bottom:1px dashed var(--line);
+  }
+  .wardrobe-thumb img{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    padding: 10px;
+    display:block;
   }
   .wardrobe-empty{
     font-size:13px;
@@ -458,10 +474,11 @@
     border-bottom:1px dashed var(--line);
   }
   .wardrobe-thumb img{
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    display:block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 10px;
+    display: block;
   }
   .wardrobe-card-body{
     padding:12px 14px;
@@ -488,15 +505,28 @@
     padding:3px 0;
     outline:none;
   }
+  .wardrobe-input, textarea.wardrobe-input {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  font-family: 'Inter', sans-serif;
+  color: var(--ink);
+  padding: 3px 0;
+  outline: none;
+}
   .wardrobe-input::placeholder{ color: var(--ink-soft); opacity:0.7; }
   .wardrobe-input.brand-input{
     font-weight:600;
-    font-size:13.5px;
+    font-size:10px;
   }
-  .wardrobe-input.desc-input{
-    font-size:12.5px;
-    border-bottom:none;
+  .wardrobe-input.desc-input {
+    font-size: 10px;
+    border-bottom: none;
     color: var(--ink-soft);
+    resize: none;
+    line-height: 1.4;
+    overflow: hidden;
   }
   .wardrobe-input:focus{ border-bottom-color: var(--thread); }
   .wardrobe-input.saved{ border-bottom-color: var(--sage); }
@@ -522,7 +552,7 @@
   <p class="lead">Transform your chaotic shopping screenshots into a beautifully organized digital wardrobe. Every item is automatically categorized, making it easier than ever to compare, rediscover, and decide what to buy.</p>
 
   <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Drag and drop an image here, or browse files from your computer">
-    <img src="logo.png" alt="Logo" class="spool">
+    <img src="logo.png" alt="" class="spool" onerror="this.style.display='none'">
     <p class="dz-title">Drag and drop your image here</p>
     <p class="dz-sub">or click to browse files from your <b>computer</b></p>
     <button type="button" class="browse-btn" id="browseBtn">Browse Files</button>
@@ -569,41 +599,40 @@
   <div id="wardrobeGroups"></div>
 </div>
 
-<!-- Noul buton de intoarcere in sus -->
 <div class="scroll-cue up-cue" id="scrollTopCue">
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <!-- Path pentru sageata orientata in sus -->
     <path d="M12 20 V4 M5 11 L12 4 L19 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>
   <p>Try a new item</p>
 </div>
 
 <script>
-  const dropzone   = document.getElementById('dropzone');
-  const fileInput   = document.getElementById('fileInput');
-  const browseBtn   = document.getElementById('browseBtn');
-  const errorMsg    = document.getElementById('errorMsg');
-  const resultCard  = document.getElementById('resultCard');
-  const previewImg  = document.getElementById('previewImg');
+  const REMOVE_BG_API_KEY = 'B7fKssL2vVVV2w88E2U8dfL1'; 
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const browseBtn = document.getElementById('browseBtn');
+  const errorMsg = document.getElementById('errorMsg');
+  const resultCard = document.getElementById('resultCard');
+  const previewImg = document.getElementById('previewImg');
   const resultLabel = document.getElementById('resultLabel');
-  const confFill    = document.getElementById('confFill');
-  const confPct     = document.getElementById('confPct');
-  const fileNameEl  = document.getElementById('fileName');
-  const resetBtn    = document.getElementById('resetBtn');
+  const confFill = document.getElementById('confFill');
+  const confPct = document.getElementById('confPct');
+  const fileNameEl = document.getElementById('fileName');
+  const resetBtn = document.getElementById('resetBtn');
   const postActions = document.getElementById('postActions');
   const addToWardrobeBtn = document.getElementById('addToWardrobeBtn');
-  const scrollCue   = document.getElementById('scrollCue');
+  const scrollCue = document.getElementById('scrollCue');
   const scrollTopCue = document.getElementById('scrollTopCue');
   const wardrobeSection = document.getElementById('wardrobeSection');
-  const wardrobeGroups  = document.getElementById('wardrobeGroups');
+  const wardrobeGroups = document.getElementById('wardrobeGroups');
 
   const ALLOWED_TYPES = ['image/png', 'image/jpeg'];
   const ALLOWED_EXT = ['.png', '.jpg', '.jpeg'];
   const NOT_CLOTHING = 'NOT A CLOTHING ITEM';
 
   const SIGNATURES = [
-    { type: 'image/png', bytes: [0x89, 0x50, 0x4E, 0x47] }, // .PNG
-    { type: 'image/jpeg', bytes: [0xFF, 0xD8, 0xFF] } // .JPG / .JPEG
+    { type: 'image/png', bytes: [0x89, 0x50, 0x4E, 0x47] }, 
+    { type: 'image/jpeg', bytes: [0xFF, 0xD8, 0xFF] } 
   ];
 
   // Maps each predicted category to the wardrobe section it belongs to.
@@ -625,12 +654,12 @@
     'head': 'Head'
   };
 
-  // In-memory wardrobe — { id, image, category, brand, description }
+  // In-memory wardrobe { id, image, category, brand, description }
   const wardrobe = {
     'upper-body': [], 'lower-body': [], 'body': [], 'shoes': [], 'head': []
   };
   let itemIdCounter = 0;
-  let currentResult = null; // { category, dataUrl }
+  let currentResult = null; 
 
   function showError(msg){
     errorMsg.textContent = msg;
@@ -677,6 +706,36 @@
     return true;
   }
 
+  async function removeBackgroundAPI(imageFile) {
+    if(REMOVE_BG_API_KEY === 'YOUR_REMOVE_BG_API_KEY_HERE') {
+      console.warn("Cheia API lipsește. Folosim imaginea originală.");
+      return null;
+    }
+
+    const formData = new FormData();
+    formData.append('size', 'auto');
+    formData.append('image_file', imageFile);
+
+    try {
+      const response = await fetch('https://api.remove.bg/v1.0/removebg', {
+        method: 'POST',
+        headers: {
+          'X-Api-Key': REMOVE_BG_API_KEY
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Eroare API Remove.bg: ' + response.statusText);
+      }
+
+      return await response.blob();
+    } catch (error) {
+      console.error('A apărut o problemă la eliminarea fundalului:', error);
+      return null;
+    }
+  }
+
   async function handleFile(file){
     clearError();
 
@@ -687,25 +746,28 @@
       return;
     }
 
+    document.body.classList.add('has-results');
+    previewImg.src = '';
+    fileNameEl.textContent = file.name;
+    resultCard.classList.remove('empty');
+    
+    resultLabel.textContent = 'Analyzing...';
+    resultLabel.classList.add('loading');
+    confFill.style.width = '0%';
+    confPct.textContent = '0%';
+    postActions.classList.remove('show');
+    currentResult = null;
+    addToWardrobeBtn.textContent = 'Add to wardrobe';
+    addToWardrobeBtn.disabled = false;
+    addToWardrobeBtn.style.opacity = '';
+    addToWardrobeBtn.style.cursor = '';
+
     const reader = new FileReader();
     reader.onload = (e) => {
-      document.body.classList.add('has-results'); // Reduce padding-ul pentru a face loc chenarului
       previewImg.src = e.target.result;
       previewImg.style.display = 'block';
-      fileNameEl.textContent = file.name;
-      resultCard.classList.remove('empty');
-      resultLabel.textContent = 'Analyzing...';
-      resultLabel.classList.add('loading');
-      confFill.style.width = '0%';
-      confPct.textContent = '0%';
-      postActions.classList.remove('show');
-      currentResult = null;
-      addToWardrobeBtn.textContent = 'Add to wardrobe';
-      addToWardrobeBtn.disabled = false;
-      addToWardrobeBtn.style.opacity = '';
-      addToWardrobeBtn.style.cursor = '';
-
-      classifyImage(file, e.target.result); // call the classification function
+      
+      classifyImage(file, e.target.result); 
     };
     reader.readAsDataURL(file);
   }
@@ -729,7 +791,7 @@
       confFill.style.width = confidence + '%';
       confPct.textContent = confidence + '%';
 
-      currentResult = { category, dataUrl };
+      currentResult = { category, dataUrl, file };
       showPostResultUI(category);
     }, 900);
   }
@@ -747,15 +809,35 @@
     }
   }
 
-  function addCurrentToWardrobe(){
-    if(!currentResult) return;
-    const { category, dataUrl } = currentResult;
+  async function addCurrentToWardrobe(){
+    if(!currentResult)
+      return;
+    
+    addToWardrobeBtn.textContent = 'Removing background...';
+    addToWardrobeBtn.disabled = true;
+    addToWardrobeBtn.style.opacity = '0.7';
+
+    const { category, file, dataUrl } = currentResult;
     const section = SECTION_MAP[category];
-    if(!section) return;
+    if(!section)
+      return;
+
+    const noBgBlob = await removeBackgroundAPI(file);
+    let finalDataUrl = dataUrl;
+
+    if(noBgBlob) {
+        finalDataUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsDataURL(noBgBlob);
+      });
+    } else if(REMOVE_BG_API_KEY !== 'YOUR_REMOVE_BG_API_KEY_HERE') {
+       showError('Background removal failed. Saved with original background.');
+    }
 
     const item = {
       id: ++itemIdCounter,
-      image: dataUrl,
+      image: finalDataUrl,
       category: category,
       brand: '',
       description: ''
@@ -843,9 +925,7 @@
 
       group.appendChild(tabsRow);
 
-      // filter items
       let filtered;
-
       if (activeCatFilter[sectionKey] === null) {
         filtered = items;
       } else {
@@ -905,13 +985,16 @@
     });
     body.appendChild(brandInput);
 
-    const descInput = document.createElement('input');
-    descInput.type = 'text';
+    const descInput = document.createElement('textarea');
     descInput.className = 'wardrobe-input desc-input';
     descInput.placeholder = 'Short description';
     descInput.value = item.description;
+    descInput.rows = 3;
+    descInput.maxLength = 55;
+    
     descInput.addEventListener('keydown', (e) => {
       if(e.key === 'Enter'){
+        e.preventDefault();
         item.description = descInput.value.trim();
         descInput.blur();
         flashSaved(descInput);
