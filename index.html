@@ -28,12 +28,25 @@
     font-family: 'Inter', sans-serif;
     min-height:100vh;
     display:flex;
+    flex-direction:column;
     align-items:center;
-    justify-content:center;
-    padding: 48px 20px;
+    justify-content:flex-start;
+    padding: 220px 20px 48px; 
+    transition: padding 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .wrap{ max-width: 620px; width:100%; }
+  body.has-results {
+    padding: 64px 20px 48px;
+  }
+
+  .wrap{ max-width: 620px; width:100%; min-height: 560px; display:flex; flex-direction:column; }
+
+  .wrap.wardrobe-section{
+    max-width: 100%;
+    min-height: 0;
+    padding-left: 32px;
+    padding-right: 32px;
+  }
 
   .eyebrow{
     font-family:'JetBrains Mono', monospace;
@@ -101,9 +114,10 @@
   }
 
   .spool{
-    width:46px; height:46px;
+    width:80px; height:80px;
     margin:0 auto 18px;
-    color: var(--thread);
+    display: block;
+    object-fit: contain;
   }
 
   .dz-title{
@@ -167,16 +181,22 @@
   /* preview + result, styled like a garment tag */
   .result-card{
     margin-top:28px;
-    display:none;
+    display:flex;
     background: var(--linen-card);
     border:1px solid var(--line);
     border-radius:4px;
     overflow:hidden;
+    max-height:180px;
   }
-  .result-card.show{ display:flex; }
+  .result-card.empty{
+    visibility: hidden;
+    max-height: 0;
+    margin-top: 0;
+    border: none;
+  }
 
   .preview-pane{
-    width:160px;
+    width:140px;
     flex-shrink:0;
     background:#EFE8D9;
     display:flex;
@@ -184,6 +204,7 @@
     justify-content:center;
     overflow:hidden;
     border-right:1px dashed var(--line);
+    align-self:stretch;
   }
   .preview-pane img{
     width:100%;
@@ -193,9 +214,13 @@
   }
 
   .result-body{
-    padding:22px 24px;
+    padding:18px 24px;
     flex:1;
     min-width:0;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    overflow:hidden;
   }
   .tag-label{
     font-family:'JetBrains Mono', monospace;
@@ -203,13 +228,13 @@
     letter-spacing:0.1em;
     text-transform:uppercase;
     color: var(--sage);
-    margin:0 0 8px;
+    margin:0 0 4px;
   }
   .tag-value{
     font-family:'Fraunces', serif;
     font-weight:600;
-    font-size:26px;
-    margin:0 0 14px;
+    font-size:20px;
+    margin:0 0 8px;
     color: var(--ink);
   }
   .tag-value.loading{
@@ -222,7 +247,7 @@
     display:flex;
     align-items:center;
     gap:10px;
-    margin-bottom:6px;
+    margin-bottom:0;
   }
   .confidence-bar{
     flex:1;
@@ -247,18 +272,15 @@
   }
 
   .filename{
-    margin-top:14px;
-    font-size:12px;
-    color: var(--ink-soft);
-    word-break: break-all;
+    display:none;
   }
   .reset-link{
-    margin-top:16px;
+    margin-top:0;
     background:none;
     border:none;
     padding:0;
     font-family:'Inter',sans-serif;
-    font-size:13px;
+    font-size:12px;
     color: var(--thread);
     text-decoration:underline;
     cursor:pointer;
@@ -266,11 +288,229 @@
 
   input[type=file]{ display:none; }
 
+  /* post-classification actions */
+  .post-actions{
+    margin-top:8px;
+    padding-top:8px;
+    border-top:1px dashed var(--line);
+    display:none;
+    flex-direction:row;
+    align-items:center;
+    gap:12px;
+  }
+  .post-actions.show{ display:flex; }
+
+  .btn-primary{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.04em;
+    background: var(--thread);
+    border:1px solid var(--thread);
+    color: var(--linen-card);
+    padding:7px 14px;
+    border-radius:2px;
+    cursor:pointer;
+    transition: background 0.15s ease;
+    white-space:nowrap;
+  }
+  .btn-primary:hover{ background: var(--thread-dark); border-color: var(--thread-dark); }
+
+  .or-text{
+    font-size:12px;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+
+  /* scroll cue in flow between upload section and wardrobe */
+  .scroll-cue{
+    display: block;
+    padding: 28px 0 32px;
+    text-align:center;
+    cursor:pointer;
+    user-select:none;
+    width: 100%;
+  }
+  .scroll-cue p{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color: var(--ink-soft);
+    margin:0 0 8px;
+  }
+  .scroll-cue svg{
+    color: var(--thread);
+    animation: bounce-down 1.6s ease-in-out infinite;
+  }
+  
+  .scroll-cue.up-cue {
+    padding: 48px 0 64px;
+  }
+  .scroll-cue.up-cue p {
+    margin: 8px 0 0 0;
+  }
+  .scroll-cue.up-cue svg {
+    animation: bounce-up 1.6s ease-in-out infinite;
+  }
+
+  @keyframes bounce-down{
+    0%, 100% { transform: translateY(0); opacity:0.55; }
+    50% { transform: translateY(8px); opacity:1; }
+  }
+  @keyframes bounce-up{
+    0%, 100% { transform: translateY(0); opacity:0.55; }
+    50% { transform: translateY(-8px); opacity:1; }
+  }
+
+  /* wardrobe section */
+  .wardrobe-section{
+    margin-top:64px;
+    padding-top:36px;
+    border-top:1px solid var(--line);
+  }
+  .wardrobe-heading{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:24px;
+    margin:0 0 28px;
+    text-align:center;
+  }
+  .wardrobe-group{
+    margin-bottom:32px;
+  }
+  .wardrobe-group-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color: var(--sage);
+    margin:0 0 12px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .wardrobe-group-label::after{
+    content:'';
+    flex:1;
+    height:1px;
+    background: var(--line);
+  }
+  .wardrobe-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap:14px;
+  }
+  .wardrobe-empty{
+    font-size:13px;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+
+  /* sub-category tabs */
+  .subcat-tabs{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-bottom:14px;
+  }
+  .subcat-tab{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color: var(--ink-soft);
+    border:1px solid var(--line);
+    background: transparent;
+    padding:4px 10px;
+    border-radius:20px;
+    cursor:pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    position:relative;
+  }
+  .subcat-tab:hover{
+    border-color: var(--thread);
+    color: var(--thread);
+  }
+  .subcat-tab.active{
+    background: var(--thread);
+    border-color: var(--thread);
+    color: var(--linen-card);
+  }
+  .subcat-tab .subcat-count{
+    display:inline-block;
+    margin-left:4px;
+    font-size:9px;
+    opacity:0.7;
+  }
+  .wardrobe-card{
+    display:flex;
+    flex-direction:column;
+    background: var(--linen-card);
+    border:1px solid var(--line);
+    border-radius:4px;
+    overflow:hidden;
+  }
+  .wardrobe-thumb{
+    width:100%;
+    height:160px;
+    flex-shrink:0;
+    background:#EFE8D9;
+    border-bottom:1px dashed var(--line);
+  }
+  .wardrobe-thumb img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  .wardrobe-card-body{
+    padding:12px 14px;
+    flex:1;
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .wardrobe-card-category{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color: var(--thread);
+  }
+  .wardrobe-input{
+    width:100%;
+    border:none;
+    border-bottom:1px solid var(--line);
+    background:transparent;
+    font-family:'Inter', sans-serif;
+    color: var(--ink);
+    padding:3px 0;
+    outline:none;
+  }
+  .wardrobe-input::placeholder{ color: var(--ink-soft); opacity:0.7; }
+  .wardrobe-input.brand-input{
+    font-weight:600;
+    font-size:13.5px;
+  }
+  .wardrobe-input.desc-input{
+    font-size:12.5px;
+    border-bottom:none;
+    color: var(--ink-soft);
+  }
+  .wardrobe-input:focus{ border-bottom-color: var(--thread); }
+  .wardrobe-input.saved{ border-bottom-color: var(--sage); }
+
   @media (max-width:480px){
     h1{ font-size:30px; }
+    body { padding: 160px 16px 48px; }
+    body.has-results { padding: 48px 16px 48px; }
     .dropzone{ padding:36px 18px; }
     .result-card.show{ flex-direction:column; }
     .preview-pane{ width:100%; height:160px; border-right:none; border-bottom:1px dashed var(--line); }
+    .wardrobe-grid{ grid-template-columns: repeat(2, 1fr); }
+    .wardrobe-thumb{ height:120px; }
+    .wrap.wardrobe-section{ padding-left:16px; padding-right:16px; }
   }
 </style>
 </head>
@@ -282,11 +522,7 @@
   <p class="lead">Transform your chaotic shopping screenshots into a beautifully organized digital wardrobe. Every item is automatically categorized, making it easier than ever to compare, rediscover, and decide what to buy.</p>
 
   <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Drag and drop an image here, or browse files from your computer">
-    <svg class="spool" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="10" y="8" width="28" height="32" rx="2" stroke="currentColor" stroke-width="1.6"/>
-      <path d="M10 16 H38 M10 24 H38 M10 32 H38" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 3"/>
-      <path d="M24 8 V40" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 3"/>
-    </svg>
+    <img src="logo.png" alt="Logo" class="spool">
     <p class="dz-title">Drag and drop your image here</p>
     <p class="dz-sub">or click to browse files from your <b>computer</b></p>
     <button type="button" class="browse-btn" id="browseBtn">Browse Files</button>
@@ -298,7 +534,7 @@
 
   <div class="error-msg" id="errorMsg"></div>
 
-  <div class="result-card" id="resultCard">
+  <div class="result-card empty" id="resultCard">
     <div class="preview-pane">
       <img id="previewImg" src="" alt="Preview of uploaded image">
     </div>
@@ -310,9 +546,36 @@
         <span class="confidence-pct" id="confPct">0%</span>
       </div>
       <p class="filename" id="fileName"></p>
-      <button class="reset-link" id="resetBtn">Upload another image</button>
+
+      <div class="post-actions" id="postActions">
+        <button type="button" class="btn-primary" id="addToWardrobeBtn">Add to wardrobe</button>
+        <span class="or-text" id="orText">or</span>
+        <button type="button" class="reset-link" id="resetBtn">Upload another image</button>
+      </div>
     </div>
   </div>
+
+</div>
+
+<div class="scroll-cue" id="scrollCue">
+  <p>Scroll down to your wardrobe</p>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 4 V20 M5 13 L12 20 L19 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</div>
+
+<div class="wrap wardrobe-section" id="wardrobeSection">
+  <p class="wardrobe-heading">Your wardrobe</p>
+  <div id="wardrobeGroups"></div>
+</div>
+
+<!-- Noul buton de intoarcere in sus -->
+<div class="scroll-cue up-cue" id="scrollTopCue">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Path pentru sageata orientata in sus -->
+    <path d="M12 20 V4 M5 11 L12 4 L19 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <p>Try a new item</p>
 </div>
 
 <script>
@@ -327,14 +590,47 @@
   const confPct     = document.getElementById('confPct');
   const fileNameEl  = document.getElementById('fileName');
   const resetBtn    = document.getElementById('resetBtn');
+  const postActions = document.getElementById('postActions');
+  const addToWardrobeBtn = document.getElementById('addToWardrobeBtn');
+  const scrollCue   = document.getElementById('scrollCue');
+  const scrollTopCue = document.getElementById('scrollTopCue');
+  const wardrobeSection = document.getElementById('wardrobeSection');
+  const wardrobeGroups  = document.getElementById('wardrobeGroups');
 
   const ALLOWED_TYPES = ['image/png', 'image/jpeg'];
   const ALLOWED_EXT = ['.png', '.jpg', '.jpeg'];
+  const NOT_CLOTHING = 'NOT A CLOTHING ITEM';
 
   const SIGNATURES = [
     { type: 'image/png', bytes: [0x89, 0x50, 0x4E, 0x47] }, // .PNG
     { type: 'image/jpeg', bytes: [0xFF, 0xD8, 0xFF] } // .JPG / .JPEG
   ];
+
+  // Maps each predicted category to the wardrobe section it belongs to.
+  const SECTION_MAP = {
+    'T-shirt':'upper-body', 'Tank top':'upper-body', 'Blouse':'upper-body', 'Shirt':'upper-body',
+    'Jacket':'upper-body', 'Blazer':'upper-body',
+    'Shorts':'lower-body', 'Pants':'lower-body', 'Skirt':'lower-body', 'Tights':'lower-body',
+    'Socks':'shoes', 'Boots':'shoes', 'Sneakers':'shoes', 'Heels':'shoes',
+    'Glasses':'head',
+    'Dress':'body'
+  };
+
+  const SECTION_ORDER = ['upper-body', 'lower-body', 'body', 'shoes', 'head'];
+  const SECTION_LABELS = {
+    'upper-body': 'Upper body',
+    'lower-body': 'Lower body',
+    'body': 'Body',
+    'shoes': 'Shoes',
+    'head': 'Head'
+  };
+
+  // In-memory wardrobe — { id, image, category, brand, description }
+  const wardrobe = {
+    'upper-body': [], 'lower-body': [], 'body': [], 'shoes': [], 'head': []
+  };
+  let itemIdCounter = 0;
+  let currentResult = null; // { category, dataUrl }
 
   function showError(msg){
     errorMsg.textContent = msg;
@@ -393,13 +689,21 @@
 
     const reader = new FileReader();
     reader.onload = (e) => {
+      document.body.classList.add('has-results'); // Reduce padding-ul pentru a face loc chenarului
       previewImg.src = e.target.result;
+      previewImg.style.display = 'block';
       fileNameEl.textContent = file.name;
-      resultCard.classList.add('show');
+      resultCard.classList.remove('empty');
       resultLabel.textContent = 'Analyzing...';
       resultLabel.classList.add('loading');
       confFill.style.width = '0%';
       confPct.textContent = '0%';
+      postActions.classList.remove('show');
+      currentResult = null;
+      addToWardrobeBtn.textContent = 'Add to wardrobe';
+      addToWardrobeBtn.disabled = false;
+      addToWardrobeBtn.style.opacity = '';
+      addToWardrobeBtn.style.cursor = '';
 
       classifyImage(file, e.target.result); // call the classification function
     };
@@ -414,16 +718,214 @@
         'Shorts', 'Pants', 'Skirt', 'Dress',
         'Jacket', 'Blazer', 'Tights', 'Socks',
         'Boots', 'Sneakers', 'Heels', 'Glasses',
-        'NOT A CLOTHING ITEM'
+        NOT_CLOTHING
       ];
       const idx = Math.floor(Math.random() * categorii.length);
       const confidence = Math.round(70 + Math.random() * 25);
+      const category = categorii[idx];
 
-      resultLabel.textContent = categorii[idx];
+      resultLabel.textContent = category;
       resultLabel.classList.remove('loading');
       confFill.style.width = confidence + '%';
       confPct.textContent = confidence + '%';
+
+      currentResult = { category, dataUrl };
+      showPostResultUI(category);
     }, 900);
+  }
+
+  function showPostResultUI(category) {
+    const isClothing = category !== NOT_CLOTHING;
+    postActions.classList.add('show');
+
+    if (isClothing) {
+      addToWardrobeBtn.style.display = 'inline-block';
+      document.getElementById('orText').style.display = 'inline';
+    } else {
+      addToWardrobeBtn.style.display = 'none';
+      document.getElementById('orText').style.display = 'none';
+    }
+  }
+
+  function addCurrentToWardrobe(){
+    if(!currentResult) return;
+    const { category, dataUrl } = currentResult;
+    const section = SECTION_MAP[category];
+    if(!section) return;
+
+    const item = {
+      id: ++itemIdCounter,
+      image: dataUrl,
+      category: category,
+      brand: '',
+      description: ''
+    };
+    wardrobe[section].push(item);
+    renderWardrobe();
+
+    currentResult = null;
+    addToWardrobeBtn.textContent = 'Added ✓';
+    addToWardrobeBtn.disabled = true;
+    addToWardrobeBtn.style.opacity = '0.5';
+    addToWardrobeBtn.style.cursor = 'default';
+  }
+
+  const SECTION_CATEGORIES = {
+    'upper-body': ['T-shirt', 'Tank top', 'Blouse', 'Shirt', 'Jacket', 'Blazer'],
+    'lower-body': ['Shorts', 'Pants', 'Skirt', 'Tights'],
+    'body':       ['Dress'],
+    'shoes':      ['Socks', 'Boots', 'Sneakers', 'Heels'],
+    'head':       ['Glasses']
+  };
+
+  // active sub-category filter per section; null = show all
+  const activeCatFilter = {
+    'upper-body': null, 'lower-body': null, 'body': null, 'shoes': null, 'head': null
+  };
+
+  function renderWardrobe(){
+    wardrobeGroups.innerHTML = '';
+
+    SECTION_ORDER.forEach(sectionKey => {
+      const items = wardrobe[sectionKey];
+      const cats  = SECTION_CATEGORIES[sectionKey];
+
+      const group = document.createElement('div');
+      group.className = 'wardrobe-group';
+
+      const label = document.createElement('p');
+      label.className = 'wardrobe-group-label';
+      label.textContent = SECTION_LABELS[sectionKey];
+      group.appendChild(label);
+
+      // sub-category tabs
+      const tabsRow = document.createElement('div');
+      tabsRow.className = 'subcat-tabs';
+
+      const allTab = document.createElement('button');
+      allTab.type = 'button';
+      if (activeCatFilter[sectionKey] === null) {
+        allTab.className = 'subcat-tab active';
+      } else {
+        allTab.className = 'subcat-tab';
+      }
+      allTab.innerHTML = 'All <span class="subcat-count">' + items.length + '</span>';
+      allTab.addEventListener('click', () => {
+        activeCatFilter[sectionKey] = null;
+        renderWardrobe();
+      });
+      tabsRow.appendChild(allTab);
+
+      cats.forEach(cat => {
+        const count = items.filter(i => i.category === cat).length;
+        const tab = document.createElement('button');
+        tab.type = 'button';
+
+        if (activeCatFilter[sectionKey] === cat) {
+          tab.className = 'subcat-tab active';
+        } else {
+          tab.className = 'subcat-tab';
+        }
+
+        if (count > 0) {
+          tab.innerHTML = cat + ' <span class="subcat-count">' + count + '</span>';
+        } else {
+          tab.innerHTML = cat;
+        }
+
+        tab.addEventListener('click', () => {
+          activeCatFilter[sectionKey] = cat;
+          renderWardrobe();
+        });
+        
+        tabsRow.appendChild(tab);
+      });
+
+      group.appendChild(tabsRow);
+
+      // filter items
+      let filtered;
+
+      if (activeCatFilter[sectionKey] === null) {
+        filtered = items;
+      } else {
+        filtered = items.filter(i => i.category === activeCatFilter[sectionKey]);
+      }
+
+      if(filtered.length === 0){
+        const empty = document.createElement('p');
+        empty.className = 'wardrobe-empty';
+        if (activeCatFilter[sectionKey]) {
+          empty.textContent = 'No ' + activeCatFilter[sectionKey] + ' items yet.';
+        } else {
+          empty.textContent = 'No items yet.';
+        }
+        group.appendChild(empty);
+      } else {
+        const grid = document.createElement('div');
+        grid.className = 'wardrobe-grid';
+        filtered.forEach(item => {
+          grid.appendChild(buildWardrobeCard(item));
+        });
+        group.appendChild(grid);
+      }
+
+      wardrobeGroups.appendChild(group);
+    });
+  }
+
+  function buildWardrobeCard(item){
+    const card = document.createElement('div');
+    card.className = 'wardrobe-card';
+
+    const thumb = document.createElement('div');
+    thumb.className = 'wardrobe-thumb';
+    const img = document.createElement('img');
+    img.src = item.image;
+    img.alt = item.category;
+    thumb.appendChild(img);
+    card.appendChild(thumb);
+
+    const body = document.createElement('div');
+    body.className = 'wardrobe-card-body';
+
+    card.dataset.category = item.category;
+
+    const brandInput = document.createElement('input');
+    brandInput.type = 'text';
+    brandInput.className = 'wardrobe-input brand-input';
+    brandInput.placeholder = 'Brand';
+    brandInput.value = item.brand;
+    brandInput.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter'){
+        item.brand = brandInput.value.trim();
+        brandInput.blur();
+        flashSaved(brandInput);
+      }
+    });
+    body.appendChild(brandInput);
+
+    const descInput = document.createElement('input');
+    descInput.type = 'text';
+    descInput.className = 'wardrobe-input desc-input';
+    descInput.placeholder = 'Short description';
+    descInput.value = item.description;
+    descInput.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter'){
+        item.description = descInput.value.trim();
+        descInput.blur();
+        flashSaved(descInput);
+      }
+    });
+    body.appendChild(descInput);
+
+    card.appendChild(body);
+    return card;
+  }
+
+  function flashSaved(inputEl){
+    inputEl.classList.add('saved');
+    setTimeout(() => inputEl.classList.remove('saved'), 700);
   }
 
   browseBtn.addEventListener('click', (e) => {
@@ -466,11 +968,30 @@
   });
 
   resetBtn.addEventListener('click', () => {
-    resultCard.classList.remove('show');
+    document.body.classList.remove('has-results');
+    resultCard.classList.add('empty');
+    resultLabel.textContent = '—';
+    confFill.style.width = '0%';
+    confPct.textContent = '0%';
+    fileNameEl.textContent = '';
+    postActions.classList.remove('show');
+    currentResult = null;
     fileInput.value = '';
     clearError();
     fileInput.click();
   });
+
+  addToWardrobeBtn.addEventListener('click', addCurrentToWardrobe);
+
+  scrollCue.addEventListener('click', () => {
+    wardrobeSection.scrollIntoView({ behavior: 'smooth' });
+  });
+
+  scrollTopCue.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  renderWardrobe();
 </script>
 
 </body>
