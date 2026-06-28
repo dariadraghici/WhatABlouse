@@ -384,11 +384,17 @@
     padding-top:8px;
     border-top:1px dashed var(--line);
     display:none;
+    flex-direction:column;
+    gap:10px;
+  }
+  .post-actions.show{ display:flex; }
+
+  .post-actions-row{
+    display:flex;
     flex-direction:row;
     align-items:center;
     gap:12px;
   }
-  .post-actions.show{ display:flex; }
 
   .btn-primary{
     font-family:'JetBrains Mono', monospace;
@@ -409,6 +415,95 @@
     font-size:12px;
     color: var(--ink-soft);
     font-style: italic;
+  }
+
+  .wrong-cat-row{
+    display:flex;
+    justify-content:flex-end;
+  }
+  .wrong-cat-btn{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:0.03em;
+    background: transparent;
+    border:none;
+    color: var(--ink-soft);
+    padding:2px 0;
+    cursor:pointer;
+    text-decoration:underline;
+    white-space:nowrap;
+    transition: color 0.15s ease;
+  }
+  .wrong-cat-btn:hover{
+    color: var(--thread);
+  }
+  .wrong-cat-btn.open{
+    color: var(--thread);
+  }
+
+  /* scrollable category correction panel */
+  .category-picker{
+    display:none;
+    flex-direction:column;
+    margin-top:2px;
+    border:1px solid var(--line);
+    border-radius:3px;
+    background:#EFE8D9;
+    overflow:hidden;
+  }
+  .category-picker.show{ display:flex; }
+
+  .cat-picker-header{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color: var(--ink-soft);
+    padding:9px 12px 7px;
+    border-bottom:1px solid var(--line);
+  }
+
+  .cat-picker-scroll{
+    max-height:160px;
+    overflow-y:auto;
+  }
+  .cat-picker-scroll::-webkit-scrollbar{ width:7px; }
+  .cat-picker-scroll::-webkit-scrollbar-track{ background: transparent; }
+  .cat-picker-scroll::-webkit-scrollbar-thumb{ background: var(--line); border-radius:10px; }
+  .cat-picker-scroll::-webkit-scrollbar-thumb:hover{ background: var(--ink-soft); }
+
+  .cat-picker-group-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size:9.5px;
+    letter-spacing:0.07em;
+    text-transform:uppercase;
+    color: var(--sage);
+    padding:8px 12px 3px;
+  }
+
+  .cat-picker-option{
+    display:block;
+    width:100%;
+    text-align:left;
+    font-family:'Fraunces', serif;
+    font-size:13px;
+    color: var(--ink);
+    background: transparent;
+    border:none;
+    padding:7px 12px;
+    cursor:pointer;
+    transition: background 0.12s ease;
+  }
+  .cat-picker-option:hover{
+    background: rgba(181,68,47,0.08);
+    color: var(--thread);
+  }
+  .cat-picker-option.current{
+    color: var(--thread);
+    font-weight:600;
+  }
+  .cat-picker-option.current::after{
+    content:' ✓';
   }
 
   /* scroll cue in flow between upload section and wardrobe */
@@ -671,9 +766,18 @@
       </div>
 
       <div class="post-actions" id="postActions">
-        <button type="button" class="btn-primary" id="addToWardrobeBtn">Add to wardrobe</button>
-        <span class="or-text" id="orText">or</span>
-        <button type="button" class="reset-link" id="resetBtn">Upload another image</button>
+        <div class="post-actions-row">
+          <button type="button" class="btn-primary" id="addToWardrobeBtn">Add to wardrobe</button>
+          <span class="or-text" id="orText">or</span>
+          <button type="button" class="reset-link" id="resetBtn">Upload another image</button>
+        </div>
+        <div class="wrong-cat-row">
+          <button type="button" class="wrong-cat-btn" id="wrongCatBtn">Not the right category?</button>
+        </div>
+        <div class="category-picker" id="categoryPicker">
+          <p class="cat-picker-header">Pick the correct category</p>
+          <div class="cat-picker-scroll" id="catPickerScroll"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -714,6 +818,9 @@
   const resetBtn = document.getElementById('resetBtn');
   const postActions = document.getElementById('postActions');
   const addToWardrobeBtn = document.getElementById('addToWardrobeBtn');
+  const wrongCatBtn = document.getElementById('wrongCatBtn');
+  const categoryPicker = document.getElementById('categoryPicker');
+  const catPickerScroll = document.getElementById('catPickerScroll');
   const scrollCue = document.getElementById('scrollCue');
   const scrollTopCue = document.getElementById('scrollTopCue');
   const wardrobeSection = document.getElementById('wardrobeSection');
@@ -800,11 +907,6 @@
   }
 
   async function removeBackgroundAPI(imageFile) {
-    if(REMOVE_BG_API_KEY === 'B7fKssL2vVVV2w88E2U8dfL1') {
-      console.warn("Cheia API lipsește. Folosim imaginea originală.");
-      return null;
-    }
-
     const formData = new FormData();
     formData.append('size', 'auto');
     formData.append('image_file', imageFile);
@@ -851,6 +953,8 @@
     postActions.classList.remove('show');
     ambiguityPicker.classList.remove('show');
     ambOptions.innerHTML = '';
+    categoryPicker.classList.remove('show');
+    wrongCatBtn.classList.remove('open');
     currentResult = null;
     addToWardrobeBtn.textContent = 'Add to wardrobe';
     addToWardrobeBtn.disabled = false;
@@ -968,6 +1072,8 @@
     ambOptions.innerHTML = '';
     ambiguityPicker.classList.add('show');
     postActions.classList.remove('show');
+    categoryPicker.classList.remove('show');
+    wrongCatBtn.classList.remove('open');
 
     results.forEach((r, idx) => {
       const row = document.createElement('div');
@@ -1028,6 +1134,60 @@
       addToWardrobeBtn.style.display = 'none';
       document.getElementById('orText').style.display = 'none';
     }
+    categoryPicker.classList.remove('show');
+    wrongCatBtn.classList.remove('open');
+  }
+
+  function buildCategoryPicker(currentCategory) {
+    catPickerScroll.innerHTML = '';
+
+    SECTION_ORDER.forEach(sectionKey => {
+      const groupLabel = document.createElement('p');
+      groupLabel.className = 'cat-picker-group-label';
+      groupLabel.textContent = SECTION_LABELS[sectionKey];
+      catPickerScroll.appendChild(groupLabel);
+
+      SECTION_CATEGORIES[sectionKey].forEach(cat => {
+        const opt = document.createElement('button');
+        opt.type = 'button';
+        opt.className = 'cat-picker-option' + (cat === currentCategory ? ' current' : '');
+        opt.textContent = cat;
+        opt.addEventListener('click', () => selectCorrectedCategory(cat));
+        catPickerScroll.appendChild(opt);
+      });
+    });
+
+    const notClothingLabel = document.createElement('p');
+    notClothingLabel.className = 'cat-picker-group-label';
+    notClothingLabel.textContent = 'Other';
+    catPickerScroll.appendChild(notClothingLabel);
+
+    const notClothingOpt = document.createElement('button');
+    notClothingOpt.type = 'button';
+    notClothingOpt.className = 'cat-picker-option' + (currentCategory === NOT_CLOTHING ? ' current' : '');
+    notClothingOpt.textContent = 'Not a clothing item';
+    notClothingOpt.addEventListener('click', () => selectCorrectedCategory(NOT_CLOTHING));
+    catPickerScroll.appendChild(notClothingOpt);
+  }
+
+  function selectCorrectedCategory(category) {
+    if (!currentResult) return;
+
+    currentResult.category = category;
+    resultLabel.textContent = category;
+    resultLabel.classList.remove('loading');
+    confFill.style.width = category === NOT_CLOTHING ? '0%' : '100%';
+    confPct.textContent  = category === NOT_CLOTHING ? '—' : 'manual';
+
+    ambiguityPicker.classList.remove('show');
+    ambOptions.innerHTML = '';
+
+    addToWardrobeBtn.textContent = 'Add to wardrobe';
+    addToWardrobeBtn.disabled = false;
+    addToWardrobeBtn.style.opacity = '';
+    addToWardrobeBtn.style.cursor = '';
+
+    showPostResultUI(category);
   }
 
   async function addCurrentToWardrobe(){
@@ -1052,7 +1212,7 @@
         reader.onload = (e) => resolve(e.target.result);
         reader.readAsDataURL(noBgBlob);
       });
-    } else if(REMOVE_BG_API_KEY !== 'B7fKssL2vVVV2w88E2U8dfL1') {
+    } else {
        showError('Background removal failed. Saved with original background.');
     }
 
@@ -1281,6 +1441,8 @@
     postActions.classList.remove('show');
     ambiguityPicker.classList.remove('show');
     ambOptions.innerHTML = '';
+    categoryPicker.classList.remove('show');
+    wrongCatBtn.classList.remove('open');
     currentResult = null;
     fileInput.value = '';
     clearError();
@@ -1288,6 +1450,20 @@
   });
 
   addToWardrobeBtn.addEventListener('click', addCurrentToWardrobe);
+
+  wrongCatBtn.addEventListener('click', () => {
+    if (!currentResult) return;
+
+    const isOpen = categoryPicker.classList.contains('show');
+    if (isOpen) {
+      categoryPicker.classList.remove('show');
+      wrongCatBtn.classList.remove('open');
+    } else {
+      buildCategoryPicker(currentResult.category);
+      categoryPicker.classList.add('show');
+      wrongCatBtn.classList.add('open');
+    }
+  });
 
   scrollCue.addEventListener('click', () => {
     wardrobeSection.scrollIntoView({ behavior: 'smooth' });
