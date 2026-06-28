@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>What A Blouse</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.5/dist/teachablemachine-image.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -184,11 +186,12 @@
   .result-card{
     margin-top:28px;
     display:flex;
+    align-items:flex-start;
     background: var(--linen-card);
     border:1px solid var(--line);
     border-radius:4px;
     overflow:hidden;
-    max-height:180px;
+    transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1);
   }
   .result-card.empty{
     visibility: hidden;
@@ -197,21 +200,106 @@
     border: none;
   }
 
-  .preview-pane{
-    width:140px;
+  /* ambiguity picker shown instead of single result when confidence is low */
+  .ambiguity-picker{
+    display:none;
+    flex-direction:column;
+    gap:0;
+    margin-top:6px;
+  }
+  .ambiguity-picker.show{ display:flex; }
+
+  .amb-header{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    letter-spacing:0.09em;
+    text-transform:uppercase;
+    color: var(--ink-soft);
+    margin:0 0 10px;
+  }
+
+  .amb-option{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:5px 0;
+    cursor:default;
+  }
+
+  .amb-label{
+    font-family:'Fraunces', serif;
+    font-size:13px;
+    font-weight:500;
+    color: var(--ink);
+    min-width:90px;
     flex-shrink:0;
+  }
+
+  .amb-bar-wrap{
+    flex:1;
+    height:5px;
+    background:#E7DECB;
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .amb-bar-fill{
+    height:100%;
+    border-radius:10px;
+    transition: width 0.55s cubic-bezier(0.4,0,0.2,1);
+    width:0%;
+  }
+  .amb-bar-fill.top{ background: var(--denim); }
+  .amb-bar-fill.alt{ background: var(--sage); }
+
+  .amb-pct{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color: var(--ink-soft);
+    min-width:36px;
+    text-align:right;
+  }
+
+  .amb-pick-btn{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    letter-spacing:0.03em;
+    background: transparent;
+    border:1px solid var(--line);
+    color: var(--ink-soft);
+    padding:3px 9px;
+    border-radius:2px;
+    cursor:pointer;
+    flex-shrink:0;
+    transition: border-color 0.13s, color 0.13s, background 0.13s;
+    white-space: nowrap;
+  }
+  .amb-pick-btn:hover{
+    border-color: var(--thread);
+    color: var(--thread);
+  }
+  .amb-pick-btn.chosen{
+    background: var(--thread);
+    border-color: var(--thread);
+    color: var(--linen-card);
+  }
+
+  .preview-pane{
+    width:160px;
+    height:160px;
+    flex-shrink:0;
+    align-self:flex-start;
     background:#EFE8D9;
     display:flex;
     align-items:center;
     justify-content:center;
     overflow:hidden;
     border-right:1px dashed var(--line);
-    align-self:stretch;
   }
   .preview-pane img{
     width:100%;
     height:100%;
-    object-fit:cover;
+    object-fit:contain;
+    padding:8px;
     display:block;
   }
 
@@ -576,6 +664,11 @@
         <span class="confidence-pct" id="confPct">0%</span>
       </div>
       <p class="filename" id="fileName"></p>
+      <!-- ambiguity picker: visible only when top confidence < threshold -->
+      <div class="ambiguity-picker" id="ambiguityPicker">
+        <p class="amb-header">Looks like it could be…</p>
+        <div id="ambOptions"></div>
+      </div>
 
       <div class="post-actions" id="postActions">
         <button type="button" class="btn-primary" id="addToWardrobeBtn">Add to wardrobe</button>
@@ -637,12 +730,12 @@
 
   // Maps each predicted category to the wardrobe section it belongs to.
   const SECTION_MAP = {
-    'T-shirt':'upper-body', 'Tank top':'upper-body', 'Blouse':'upper-body', 'Shirt':'upper-body',
+    'T-shirt':'upper-body', 'Crop Top':'upper-body', 'Tank top':'upper-body', 'Turtle Neck':'upper-body', 'Blouse':'upper-body', 'Shirt':'upper-body', 'Pullovers':'upper-body', 'Hoodies':'upper-body',
     'Jacket':'upper-body', 'Blazer':'upper-body',
-    'Shorts':'lower-body', 'Pants':'lower-body', 'Skirt':'lower-body', 'Tights':'lower-body',
+    'Shorts':'lower-body', 'Pants':'lower-body', 'Skirt':'lower-body', 'Tights':'lower-body', 'Leggings':'lower-body',
     'Socks':'shoes', 'Boots':'shoes', 'Sneakers':'shoes', 'Heels':'shoes',
     'Glasses':'head',
-    'Dress':'body'
+    'Dress':'body', 'Bodysuit':'body', 'Jumpsuit':'body', 'Romper':'body',
   };
 
   const SECTION_ORDER = ['upper-body', 'lower-body', 'body', 'shoes', 'head'];
@@ -707,7 +800,7 @@
   }
 
   async function removeBackgroundAPI(imageFile) {
-    if(REMOVE_BG_API_KEY === 'YOUR_REMOVE_BG_API_KEY_HERE') {
+    if(REMOVE_BG_API_KEY === 'B7fKssL2vVVV2w88E2U8dfL1') {
       console.warn("Cheia API lipsește. Folosim imaginea originală.");
       return null;
     }
@@ -756,6 +849,8 @@
     confFill.style.width = '0%';
     confPct.textContent = '0%';
     postActions.classList.remove('show');
+    ambiguityPicker.classList.remove('show');
+    ambOptions.innerHTML = '';
     currentResult = null;
     addToWardrobeBtn.textContent = 'Add to wardrobe';
     addToWardrobeBtn.disabled = false;
@@ -772,34 +867,160 @@
     reader.readAsDataURL(file);
   }
 
-  // Placeholder (it will randomly pick a category and confidence for demonstration purposes)
-  function classifyImage(file, dataUrl){
-    setTimeout(() => {
-      const categorii = [
-        'T-shirt', 'Tank top', 'Blouse', 'Shirt',
-        'Shorts', 'Pants', 'Skirt', 'Dress',
-        'Jacket', 'Blazer', 'Tights', 'Socks',
-        'Boots', 'Sneakers', 'Heels', 'Glasses',
-        NOT_CLOTHING
-      ];
-      const idx = Math.floor(Math.random() * categorii.length);
-      const confidence = Math.round(70 + Math.random() * 25);
-      const category = categorii[idx];
+  const TM_MODEL_URL = 'https://teachablemachine.withgoogle.com/models/OswosMnyu/';
+  // entropy-based non-clothing detection
+  // a real clothing image concentrates probability on 1-2 classes (low entropy) while a non-clothing image spreads probability evenly across all classes (high entropy).
+  // MAX_ENTROPY = log2(N) where N = number of classes.
+  const ENTROPY_THRESHOLD = 0.80; // 80% of maximum possible entropy = "not clothing"
 
-      resultLabel.textContent = category;
+  // If top prediction >= this, skip the picker and classify directly.
+  const AMBIGUITY_THRESHOLD = 72; // 72% confidence = "good enough" to skip ambiguity picker
+
+  const ambiguityPicker = document.getElementById('ambiguityPicker');
+  const ambOptions = document.getElementById('ambOptions');
+
+  // Load model automatically on page load
+  let tmModel = null;
+  (async () => {
+    try {
+      const url = TM_MODEL_URL.replace(/\/?$/, '/');
+      tmModel = await tmImage.load(url + 'model.json', url + 'metadata.json');
+      console.log('TM model loaded —', tmModel.getTotalClasses(), 'classes');
+    } catch (e) {
+      console.error('Failed to load TM model:', e);
+    }
+  })();
+
+  // shannon entropy of a probability distribution (probabilities as 0-1 values)
+  function shannonEntropy(probs) {
+    return -probs.reduce((sum, p) => {
+      if (p <= 0) return sum;
+      return sum + p * Math.log2(p);
+    }, 0);
+  }
+
+  async function classifyImage(file, dataUrl) {
+    if (!tmModel) {
+      resultLabel.textContent = 'Error';
       resultLabel.classList.remove('loading');
-      confFill.style.width = confidence + '%';
-      confPct.textContent = confidence + '%';
+      showError('Model not loaded yet — wait a moment and try again.');
+      return;
+    }
 
-      currentResult = { category, dataUrl, file };
-      showPostResultUI(category);
-    }, 900);
+    try {
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
+
+      const predictions = await tmModel.predict(img);
+      const probs = predictions.map(p => p.probability);
+      const n = probs.length;
+
+      const entropy = shannonEntropy(probs);
+      const maxEntropy = Math.log2(n); // entropy when all classes equally likely
+      const normEntropy = entropy / maxEntropy;  // 0 = perfect certainty, 1 = total confusion
+
+      if (normEntropy >= ENTROPY_THRESHOLD) {
+        resultLabel.textContent = NOT_CLOTHING;
+        resultLabel.classList.remove('loading');
+        confFill.style.width = '0%';
+        confPct.textContent  = '—';
+        currentResult = { category: NOT_CLOTHING, dataUrl, file };
+        ambiguityPicker.classList.remove('show');
+        ambOptions.innerHTML = '';
+        showPostResultUI(NOT_CLOTHING);
+        return;
+      }
+
+      // sort by confidence (>= 5%)
+      let results = predictions
+        .map(p => ({ category: p.className, confidence: Math.round(p.probability * 100) }))
+        .sort((a, b) => b.confidence - a.confidence)
+        .filter(r => r.confidence >= 5);
+
+      if (results.length === 0) results = [{ category: NOT_CLOTHING, confidence: 0 }];
+
+      const top = results[0];
+
+      resultLabel.textContent = top.category;
+      resultLabel.classList.remove('loading');
+      confFill.style.width = top.confidence + '%';
+      confPct.textContent  = top.confidence + '%';
+      currentResult = { category: top.category, dataUrl, file };
+
+      if (results.length > 1 && top.confidence < AMBIGUITY_THRESHOLD) {
+        renderAmbiguityPicker(results.slice(0, 4), dataUrl, file);
+      } else {
+        ambiguityPicker.classList.remove('show');
+        ambOptions.innerHTML = '';
+        showPostResultUI(top.category);
+      }
+
+    } catch (err) {
+      console.error('Classification error:', err);
+      resultLabel.textContent = 'Error';
+      resultLabel.classList.remove('loading');
+      showError('Classification failed: ' + (err.message || 'unknown error'));
+    }
+  }
+
+  function renderAmbiguityPicker(results, dataUrl, file) {
+    ambOptions.innerHTML = '';
+    ambiguityPicker.classList.add('show');
+    postActions.classList.remove('show');
+
+    results.forEach((r, idx) => {
+      const row = document.createElement('div');
+      row.className = 'amb-option';
+
+      const label = document.createElement('span');
+      label.className = 'amb-label';
+      label.textContent = r.category;
+
+      const barWrap = document.createElement('div');
+      barWrap.className = 'amb-bar-wrap';
+      const barFill = document.createElement('div');
+      barFill.className = 'amb-bar-fill ' + (idx === 0 ? 'top' : 'alt');
+      barFill.style.width = '0%';
+      barWrap.appendChild(barFill);
+
+      const pct = document.createElement('span');
+      pct.className = 'amb-pct';
+      pct.textContent = r.confidence + '%';
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'amb-pick-btn';
+      btn.textContent = 'Pick';
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => { barFill.style.width = r.confidence + '%'; });
+      });
+
+      btn.addEventListener('click', () => {
+        ambOptions.querySelectorAll('.amb-pick-btn').forEach(b => {
+          b.disabled = true;
+          b.classList.remove('chosen');
+        });
+        btn.classList.add('chosen');
+        resultLabel.textContent = r.category;
+        confFill.style.width  = r.confidence + '%';
+        confPct.textContent   = r.confidence + '%';
+        currentResult = { category: r.category, dataUrl, file };
+        showPostResultUI(r.category);
+      });
+
+      row.appendChild(label);
+      row.appendChild(barWrap);
+      row.appendChild(pct);
+      row.appendChild(btn);
+      ambOptions.appendChild(row);
+    });
   }
 
   function showPostResultUI(category) {
     const isClothing = category !== NOT_CLOTHING;
     postActions.classList.add('show');
-
     if (isClothing) {
       addToWardrobeBtn.style.display = 'inline-block';
       document.getElementById('orText').style.display = 'inline';
@@ -831,7 +1052,7 @@
         reader.onload = (e) => resolve(e.target.result);
         reader.readAsDataURL(noBgBlob);
       });
-    } else if(REMOVE_BG_API_KEY !== 'YOUR_REMOVE_BG_API_KEY_HERE') {
+    } else if(REMOVE_BG_API_KEY !== 'B7fKssL2vVVV2w88E2U8dfL1') {
        showError('Background removal failed. Saved with original background.');
     }
 
@@ -853,11 +1074,11 @@
   }
 
   const SECTION_CATEGORIES = {
-    'upper-body': ['T-shirt', 'Tank top', 'Blouse', 'Shirt', 'Jacket', 'Blazer'],
-    'lower-body': ['Shorts', 'Pants', 'Skirt', 'Tights'],
-    'body':       ['Dress'],
-    'shoes':      ['Socks', 'Boots', 'Sneakers', 'Heels'],
-    'head':       ['Glasses']
+    'upper-body': ['T-shirt', 'Crop Top', 'Turtle Neck', 'Tank top', 'Blouse', 'Shirt', 'Jacket', 'Blazer', 'Pullovers', 'Hoodies'],
+    'lower-body': ['Shorts', 'Pants', 'Skirt', 'Tights', 'Leggings'],
+    'body': ['Dress', 'Bodysuit', 'Jumpsuit', 'Romper'],
+    'shoes': ['Socks', 'Boots', 'Sneakers', 'Heels'],
+    'head': ['Glasses']
   };
 
   // active sub-category filter per section; null = show all
@@ -1058,6 +1279,8 @@
     confPct.textContent = '0%';
     fileNameEl.textContent = '';
     postActions.classList.remove('show');
+    ambiguityPicker.classList.remove('show');
+    ambOptions.innerHTML = '';
     currentResult = null;
     fileInput.value = '';
     clearError();
