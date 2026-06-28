@@ -842,7 +842,7 @@
     'Shorts':'lower-body', 'Pants':'lower-body', 'Skirt':'lower-body', 'Tights':'lower-body', 'Leggings':'lower-body',
     'Socks':'shoes', 'Boots':'shoes', 'Sneakers':'shoes', 'Heels':'shoes',
     'Glasses':'head',
-    'Dress':'body', 'Bodysuit':'body', 'Jumpsuit':'body', 'Romper':'body',
+    'Dress':'body', 'Bodysuit':'body', 'Jumpsuit':'body', 'Purse':'body',
   };
 
   const SECTION_ORDER = ['upper-body', 'lower-body', 'body', 'shoes', 'head'];
@@ -971,7 +971,7 @@
     reader.readAsDataURL(file);
   }
 
-  const TM_MODEL_URL = 'https://teachablemachine.withgoogle.com/models/OswosMnyu/';
+  const TM_MODEL_URL = 'https://teachablemachine.withgoogle.com/models/XR8fMdsCU/';
   // entropy-based non-clothing detection
   // a real clothing image concentrates probability on 1-2 classes (low entropy) while a non-clothing image spreads probability evenly across all classes (high entropy).
   // MAX_ENTROPY = log2(N) where N = number of classes.
@@ -1234,9 +1234,9 @@
   }
 
   const SECTION_CATEGORIES = {
-    'upper-body': ['T-shirt', 'Crop Top', 'Turtle Neck', 'Tank top', 'Blouse', 'Shirt', 'Jacket', 'Blazer', 'Pullovers', 'Hoodies'],
+    'upper-body': ['T-shirt', 'Crop Top', 'Turtle Neck', 'Tank top', 'Blouse', 'Shirt', 'Jacket', 'Blazer', 'Pullovers', 'Hoodie'],
     'lower-body': ['Shorts', 'Pants', 'Skirt', 'Tights', 'Leggings'],
-    'body': ['Dress', 'Bodysuit', 'Jumpsuit', 'Romper'],
+    'body': ['Dress', 'Bodysuit', 'Jumpsuit', 'Purse'],
     'shoes': ['Socks', 'Boots', 'Sneakers', 'Heels'],
     'head': ['Glasses']
   };
