@@ -1,0 +1,10 @@
+# Secrets — never commit real env files
+.env
+server/.env
+
+# Dependencies
+node_modules/
+
+# OS/editor junk
+.DS_Store
+Thumbs.db

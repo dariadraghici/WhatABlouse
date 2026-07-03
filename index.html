@@ -804,7 +804,6 @@
 </div>
 
 <script>
-  const REMOVE_BG_API_KEY = 'B7fKssL2vVVV2w88E2U8dfL1'; 
   const dropzone = document.getElementById('dropzone');
   const fileInput = document.getElementById('fileInput');
   const browseBtn = document.getElementById('browseBtn');
@@ -912,11 +911,10 @@
     formData.append('image_file', imageFile);
 
     try {
-      const response = await fetch('https://api.remove.bg/v1.0/removebg', {
+      // Calls OUR OWN backend, which holds the real remove.bg API key server-side.
+      // The browser never sees the key.
+      const response = await fetch('/api/remove-bg', {
         method: 'POST',
-        headers: {
-          'X-Api-Key': REMOVE_BG_API_KEY
-        },
         body: formData
       });
 
