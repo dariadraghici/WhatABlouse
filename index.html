@@ -911,8 +911,6 @@
     formData.append('image_file', imageFile);
 
     try {
-      // Calls OUR OWN backend, which holds the real remove.bg API key server-side.
-      // The browser never sees the key.
       const response = await fetch('/api/remove-bg', {
         method: 'POST',
         body: formData
